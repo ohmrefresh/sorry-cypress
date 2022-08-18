@@ -25,7 +25,18 @@ COPY --chown=node:node --from=build /app/packages/ packages/
 COPY --chown=node:node --from=build /app/node_modules/ node_modules/
 RUN apk add --no-cache tini
 ENV NODE_ENV=production
+
+RUN deluser --remove-home node \
+  && addgroup -S node -g 9999 \
+  && adduser -S -G node -u 9999 node
+
+ENV PM2_HOME=%USERPROFILE%\.pm2
+RUN mkdir -p %USERPROFILE%\.pm2
+RUN chmod 777 %USERPROFILE%\.pm2
+RUN chgrp -R 0 %USERPROFILE%\.pm2
+
 USER node
 EXPOSE 1234
 ENTRYPOINT ["/sbin/tini", "--"]
+
 CMD ["./node_modules/.bin/pm2-runtime", "packages/director/dist"]
